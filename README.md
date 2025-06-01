@@ -1,238 +1,262 @@
-# Домашнее задание 3
-
-## Задание 1
-
->Прописываю CMakeLists для библиотеки formatter
+## Laboratory work VI
+Данная лабораторная работа посвещена изучению средств пакетирования на примере CPack
 ```
-cd lab03/formatter_lib
-cat > CMakeLists.txt << EOF
-
->cmake_minimum_required(VERSION 3.2)
-project(formatter)
-set(CMAKE_CXX_STANDARD 20)
+$ open https://cmake.org/Wiki/CMake:CPackPackageGenerators
+```
+## Меняем корневой CMakeLists.txt
+```
+cmake_minimum_required(VERSION 3.10...3.28)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-add_library(formatter STATIC ${CMAKE_CURRENT_SOURCE_DIR}/formatter.cpp)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+set(CMAKE_CXX_EXTENSIONS OFF)
+option(COVERAGE "Enable code coverage" OFF)
+option(BUILD_TESTS "Build tests" ON)
 
-> EOF
-```
----
-
-## Задание 2
-
->Прописываю CMakeLists для библиотеки formatter ex
-```
-cd ..
-cd formatter_ex_lib
-cat > CMakeLists.txt << EOF
-
->cmake_minimum_required(VERSION 3.2)
-project(formatter_ex)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-add_library(formatter_ex STATIC formatter_ex.cpp)
-target_include_directories(formatter_ex PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../formatter_lib
-)
-cmake_policy(SET CMP0079 NEW)  
-target_link_libraries(formatter_ex PRIVATE formatter)
-
->EOF
-```
----
-
-## Задание 3
-
->Прописываю CMakeLists для приложения hello_world с использованием библиотеки formatter ex и дополнительно formatter
-```
-cd ..
-cd hello_world_application
-cat > CMakeLists.txt << EOF
-
->cmake_minimum_required(VERSION 3.2)
-project(hello_world)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-add_executable(hello_world hello_world.cpp)
-target_link_libraries(hello_world formatter_ex)
-target_include_directories(hello_world PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../formatter_ex_lib
-    ${CMAKE_CURRENT_SOURCE_DIR}/../formatter_lib
+project(TestRunning
+    VERSION 0.1.0
+    DESCRIPTION "Banking application test framework"
+    LANGUAGES CXX
 )
 
->EOF
+add_subdirectory(banking)
+if(BUILD_TESTS)
+    find_package(Git REQUIRED)
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/googletest/CMakeLists.txt")
+        message(STATUS "Cloning googletest submodule...")
+        execute_process(
+            COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            RESULT_VARIABLE GIT_SUBMOD_RESULT
+        )
+        if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+            message(FATAL_ERROR "Failed to initialize submodules")
+        endif()
+    endif()
+
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
+    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+    add_subdirectory(googletest)
+    add_executable(RunTest test.cpp)
+
+    target_include_directories(RunTest PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/banking
+    )
+
+    target_link_libraries(RunTest PRIVATE
+        banking
+        gtest
+        gmock
+        gtest_main
+    )
+
+    if(COVERAGE)
+        target_compile_options(RunTest PRIVATE --coverage)
+        target_link_options(RunTest PRIVATE --coverage)
+    endif()
+    include(GoogleTest)
+    gtest_discover_tests(RunTest)
+endif()
+set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
+set(CPACK_PACKAGE_VENDOR "ammobaggage")
+set(CPACK_PACKAGE_CONTACT "ammobaggage@gmail.com")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+
+if(WIN32)
+    set(CPACK_GENERATOR "WIX")
+    set(CPACK_WIX_UPGRADE_GUID "D9D9F7B2-3C4D-4E2F-9B1A-0E1D2C3B4A5F") 
+    set(CPACK_WIX_PRODUCT_GUID "B8F9F7A1-3C4D-4E2F-9B1A-0E1D2C3B4A5F")
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.rtf")
+        file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.rtf" " ")
+    endif()
+    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.rtf")
+else()
+    set(CPACK_GENERATOR "TGZ;DEB;RPM")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "ammobaggage <ammobaggage@gmail.com>")
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+endif()
+
+include(InstallRequiredSystemLibraries)
+include(CPack)
 ```
 
->Теперь прописываю CMakeLists для библиоткеи solver
+## Laboratory work VI
+Данная лабораторная работа посвещена изучению средств пакетирования на примере CPack
 ```
-cd ..
-cd solver_lib
-cat > CMakeLists.txt << EOF
-
->cmake_minimum_required(VERSION 3.2)
-project(solver_lib)
-
-set(CMAKE_CXX_STANDARD 20)
+$ open https://cmake.org/Wiki/CMake:CPackPackageGenerators
+```
+## Меняем корневой CMakeLists.txt
+```
+cmake_minimum_required(VERSION 3.10...3.28)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+option(COVERAGE "Enable code coverage" OFF)
+option(BUILD_TESTS "Build tests" ON)
 
-add_library(solver_lib STATIC solver.cpp)
-
-target_include_directories(solver_lib PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
+project(TestRunning
+    VERSION 0.1.0
+    DESCRIPTION "Banking application test framework"
+    LANGUAGES CXX
 )
 
-> EOF
+add_subdirectory(banking)
+if(BUILD_TESTS)
+    find_package(Git REQUIRED)
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/googletest/CMakeLists.txt")
+        message(STATUS "Cloning googletest submodule...")
+        execute_process(
+            COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            RESULT_VARIABLE GIT_SUBMOD_RESULT
+        )
+        if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+            message(FATAL_ERROR "Failed to initialize submodules")
+        endif()
+    endif()
+
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
+    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+    add_subdirectory(googletest)
+    add_executable(RunTest test.cpp)
+
+    target_include_directories(RunTest PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/banking
+    )
+
+    target_link_libraries(RunTest PRIVATE
+        banking
+        gtest
+        gmock
+        gtest_main
+    )
+
+    if(COVERAGE)
+        target_compile_options(RunTest PRIVATE --coverage)
+        target_link_options(RunTest PRIVATE --coverage)
+    endif()
+    include(GoogleTest)
+    gtest_discover_tests(RunTest)
+endif()
+set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
+set(CPACK_PACKAGE_VENDOR "ammobaggage")
+set(CPACK_PACKAGE_CONTACT "ammobaggage@gmail.com")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+
+if(WIN32)
+    set(CPACK_GENERATOR "WIX")
+    set(CPACK_WIX_UPGRADE_GUID "D9D9F7B2-3C4D-4E2F-9B1A-0E1D2C3B4A5F") 
+    set(CPACK_WIX_PRODUCT_GUID "B8F9F7A1-3C4D-4E2F-9B1A-0E1D2C3B4A5F")
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.rtf")
+        file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.rtf" " ")
+    endif()
+    set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.rtf")
+else()
+    set(CPACK_GENERATOR "TGZ;DEB;RPM")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "ammobaggage <ammobaggage@gmail.com>")
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+endif()
+
+include(InstallRequiredSystemLibraries)
+include(CPack)
+
 ```
 
->Прописываю CMakeLists для приложения solver
+## Добавляем release.yml
 ```
-cd ..
-cd solver_application
-cat > CMakeLists.txt << EOF
+name: Release Build
 
->cmake_minimum_required(VERSION 3.2)
-project(solver)
+on:
+  release:
+    types: [published]
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+jobs:
+  build-linux:
+    name: Build on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake dpkg-dev rpm
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release --parallel $(nproc)
+      - name: Package
+        run: |
+          cd build
+          cpack -G TGZ
+          cpack -G DEB
+          cpack -G RPM
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-release
+          path: |
+            build/*.tar.gz
+            build/*.deb
+            build/*.rpm
 
-add_executable(solver equation.cpp)
+  build-windows:
+    name: Build on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Setup WiX
+        run: |
+          choco install wixtoolset -y
+          echo "WIX=C:\Program Files (x86)\WiX Toolset v3.11\bin" >> $env:GITHUB_ENV
+      - name: Prepare license
+        shell: pwsh
+        run: |
+          if (!(Test-Path "LICENSE.rtf")) { " " | Out-File -Encoding ASCII "LICENSE.rtf" }
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Package
+        run: |
+          cd build
+          cpack -G WIX -C Release -V --debug
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: build/*.msi
+          if-no-files-found: warn
 
-target_link_libraries(solver formatter_ex solver_lib)
-
-target_include_directories(solver PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../formatter_lib
-    ${CMAKE_CURRENT_SOURCE_DIR}/../formatter_ex_lib
-    ${CMAKE_CURRENT_SOURCE_DIR}/../solver_lib
-)
-
->EOF
+  build-macos:
+    name: Build on macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release --parallel 2
+      - name: Package
+        run: |
+          cd build
+          cpack -G DragNDrop
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-release
+          path: build/*.dmg
+          if-no-files-found: warn
 ```
----
->Прописываю общий CMakeLists для сборки всего проекта. Собираю все библиотеки и приложения
-```
-cd ..
-cat >> CMakeLists.txt << EOF
-
->cmake_minimum_required(VERSION 3.2)
-project(lab03)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-add_subdirectory(formatter_lib)
-add_subdirectory(formatter_ex_lib)
-add_subdirectory(solver_lib)
-add_subdirectory(hello_world_application)
-add_subdirectory(solver_application)
-
->EOF
-```
-
-```
-cmake -B build
-```
-**Вывод**
-```
-CMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
-  Compatibility with CMake < 3.5 will be removed from a future version of
-  CMake.
-
-  Update the VERSION argument <min> value or use a ...<max> suffix to tell
-  CMake that the project does not need compatibility with older versions.
-
-
--- The C compiler identification is GNU 13.3.0
--- The CXX compiler identification is GNU 13.3.0
--- Detecting C compiler ABI info
--- Detecting C compiler ABI info - done
--- Check for working C compiler: /usr/bin/cc - skipped
--- Detecting C compile features
--- Detecting C compile features - done
--- Detecting CXX compiler ABI info
--- Detecting CXX compiler ABI info - done
--- Check for working CXX compiler: /usr/bin/c++ - skipped
--- Detecting CXX compile features
--- Detecting CXX compile features - done
-CMake Deprecation Warning at formatter_lib/CMakeLists.txt:1 (cmake_minimum_required):
-  Compatibility with CMake < 3.5 will be removed from a future version of
-  CMake.
-
-  Update the VERSION argument <min> value or use a ...<max> suffix to tell
-  CMake that the project does not need compatibility with older versions.
-
-
-CMake Deprecation Warning at formatter_ex_lib/CMakeLists.txt:1 (cmake_minimum_required):
-  Compatibility with CMake < 3.5 will be removed from a future version of
-  CMake.
-
-  Update the VERSION argument <min> value or use a ...<max> suffix to tell
-  CMake that the project does not need compatibility with older versions.
-
-
-CMake Deprecation Warning at solver_lib/CMakeLists.txt:1 (cmake_minimum_required):
-  Compatibility with CMake < 3.5 will be removed from a future version of
-  CMake.
-
-  Update the VERSION argument <min> value or use a ...<max> suffix to tell
-  CMake that the project does not need compatibility with older versions.
-
-
-CMake Deprecation Warning at hello_world_application/CMakeLists.txt:1 (cmake_minimum_required):
-  Compatibility with CMake < 3.5 will be removed from a future version of
-  CMake.
-
-  Update the VERSION argument <min> value or use a ...<max> suffix to tell
-  CMake that the project does not need compatibility with older versions.
-
-
-CMake Deprecation Warning at solver_application/CMakeLists.txt:1 (cmake_minimum_required):
-  Compatibility with CMake < 3.5 will be removed from a future version of
-  CMake.
-
-  Update the VERSION argument <min> value or use a ...<max> suffix to tell
-  CMake that the project does not need compatibility with older versions.
-
-
--- Configuring done (1.0s)
--- Generating done (0.0s)
--- Build files have been written to: /home/opiates/ammobaggage/workspace/projects/lab03/build
-```
----
-```
-cmake --build build
-```
-**Вывод**
-```
-[ 10%] Building CXX object formatter_lib/CMakeFiles/formatter.dir/formatter.cpp.o
-[ 20%] Linking CXX static library libformatter.a
-[ 20%] Built target formatter
-[ 30%] Building CXX object formatter_ex_lib/CMakeFiles/formatter_ex.dir/formatter_ex.cpp.o
-[ 40%] Linking CXX static library libformatter_ex.a
-[ 40%] Built target formatter_ex
-[ 50%] Building CXX object solver_lib/CMakeFiles/solver_lib.dir/solver.cpp.o
-[ 60%] Linking CXX static library libsolver_lib.a
-[ 60%] Built target solver_lib
-[ 70%] Building CXX object hello_world_application/CMakeFiles/hello_world.dir/hello_world.cpp.o
-[ 80%] Linking CXX executable hello_world
-[ 80%] Built target hello_world
-[ 90%] Building CXX object solver_application/CMakeFiles/solver.dir/equation.cpp.o
-[100%] Linking CXX executable solver
-[100%] Built target solver
-```
----
-## Тест сборки
-```
-cd build/hello_world_application
-./hello_world
-```
-**Вывод**
-```
--------------------------
-hello, world!
--------------------------
-```
-
-[Ссылка на репрезиторий](https://github.com/ammobaggage/lab03)
-
-**Карев Георгий | ИУ8-21**
